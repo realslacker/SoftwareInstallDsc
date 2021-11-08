@@ -43,6 +43,7 @@
     PrivateData       = @{
 
         PSData = @{
+
             # Set to a prerelease string value if the release should be a prerelease.
             Prerelease   = ''
 
@@ -50,16 +51,17 @@
             Tags         = @('DesiredStateConfiguration', 'DSC', 'DSCResourceKit', 'DSCResource')
 
             # A URL to the license for this module.
-            #LicenseUri   = 'https://github.com/dsccommunity/xPSDesiredStateConfiguration/blob/main/LICENSE'
+            LicenseUri   = 'https://github.com/realslacker/DSC_xSoftwareInstallResource/blob/main/LICENSE'
 
             # A URL to the main website for this project.
-            #ProjectUri   = 'https://github.com/dsccommunity/xPSDesiredStateConfiguration'
+            ProjectUri   = 'https://github.com/realslacker/DSC_xSoftwareInstallResource'
 
             # A URL to an icon representing this module.
-            #IconUri      = 'https://dsccommunity.org/images/DSC_Logo_300p.png'
+            IconUri      = 'https://dsccommunity.org/images/DSC_Logo_300p.png'
 
             # ReleaseNotes of this module
             ReleaseNotes = ''
+            
         } # End of PSData hashtable
     } # End of PrivateData hashtable
 }
