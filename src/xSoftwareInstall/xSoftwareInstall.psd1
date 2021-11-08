@@ -1,7 +1,7 @@
 @{
 
     # Version number of this module.
-    moduleVersion     = '0.0.1'
+    moduleVersion     = '0.0.2'
 
     # ID used to uniquely identify this module
     GUID              = 'c42ea9de-82b5-4760-970a-38e678579060'
@@ -48,7 +48,7 @@
             Prerelease   = ''
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags         = @('DesiredStateConfiguration', 'DSC', 'DSCResourceKit', 'DSCResource')
+            Tags         = @( 'DesiredStateConfiguration', 'DSC', 'DSCResource', 'Software', 'Install' )
 
             # A URL to the license for this module.
             LicenseUri   = 'https://github.com/realslacker/DSC_xSoftwareInstallResource/blob/main/LICENSE'
@@ -57,7 +57,7 @@
             ProjectUri   = 'https://github.com/realslacker/DSC_xSoftwareInstallResource'
 
             # A URL to an icon representing this module.
-            IconUri      = 'https://dsccommunity.org/images/DSC_Logo_300p.png'
+            # IconUri      = 'https://dsccommunity.org/images/DSC_Logo_300p.png'
 
             # ReleaseNotes of this module
             ReleaseNotes = ''
