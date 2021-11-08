@@ -7,7 +7,7 @@ using namespace System.Security.Cryptography
 using namespace System.Management.Automation
 
 
-$Script:PackageCacheLocation = "$env:ProgramData\Microsoft\Windows\PowerShell\Configuration\BuiltinProvCache\DSC_xSoftwareInstallResource"
+$Script:PackageCacheLocation = "$env:ProgramData\Microsoft\Windows\PowerShell\Configuration\BuiltinProvCache\DSC_SoftwareInstallResource"
 
 <#
 .SYNOPSIS

@@ -1,6 +1,6 @@
 
-[ClassVersion("0.1.0.0"), FriendlyName("xSoftwareInstall")]
-class DSC_xSoftwareInstallResource : OMI_BaseResource
+[ClassVersion("0.1.0.0"), FriendlyName("SoftwareInstall")]
+class DSC_SoftwareInstallResource : OMI_BaseResource
 {
     [Write, Description("Says whether DestinationPath exists on the machine."), ValueMap{"Present", "Absent"}, Values{"Present", "Absent"}] String Ensure;
     [Required, Description("Type of installer package."), ValueMap{"MSI", "EXE"}, Values{"MSI", "EXE"}] String Type;

@@ -1,10 +1,10 @@
 @{
 
     # Version number of this module.
-    moduleVersion     = '0.0.2'
+    moduleVersion     = '0.5'
 
     # ID used to uniquely identify this module
-    GUID              = 'c42ea9de-82b5-4760-970a-38e678579060'
+    GUID              = '18d66347-1ee7-411e-adce-a3c6fee8ddad'
 
     # Author of this module
     Author            = 'Shannon Graybrook'
@@ -37,7 +37,7 @@
     AliasesToExport   = @()
 
     # DSC resources to export from this module
-    DscResourcesToExport  = @( 'xSoftwareInstall' )
+    DscResourcesToExport  = @( 'SoftwareInstall' )
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
     PrivateData       = @{
@@ -54,7 +54,7 @@
             LicenseUri   = 'https://github.com/realslacker/DSC_xSoftwareInstallResource/blob/main/LICENSE'
 
             # A URL to the main website for this project.
-            ProjectUri   = 'https://github.com/realslacker/DSC_xSoftwareInstallResource'
+            ProjectUri   = 'https://github.com/realslacker/SoftwareInstallDsc'
 
             # A URL to an icon representing this module.
             # IconUri      = 'https://dsccommunity.org/images/DSC_Logo_300p.png'
