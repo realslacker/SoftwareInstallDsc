@@ -1,0 +1,32 @@
+
+[ClassVersion("0.1.0.0"), FriendlyName("xSoftwareInstall")]
+class DSC_xSoftwareInstallResource : OMI_BaseResource
+{
+    [Write, Description("Says whether DestinationPath exists on the machine."), ValueMap{"Present", "Absent"}, Values{"Present", "Absent"}] String Ensure;
+    [Required, Description("Type of installer package."), ValueMap{"MSI", "EXE"}, Values{"MSI", "EXE"}] String Type;
+    [Key, Description("Name of the software to be installed. Should match name in Add/Remove Programs. Wildcards are supported.")] String Name;
+    [Write, Description("Name of the publisher of the software to be installed. Should match value in Add/Remove Programs. Wildcards are supported.")] String Publisher;
+    [Write, Description("Version of the software to be installed. Should match value in Add/Remove Programs.")] String Version;
+    [Write, Description("How the version is compared to the installed version. Defaults to EqualTo."), ValueMap{"Any", "LessThan", "LessThanOrEqualTo", "EqualTo", "GreaterThanOrEqualTo", "GreaterThan"}, Values{"Any", "LessThan", "LessThanOrEqualTo", "EqualTo", "GreaterThanOrEqualTo", "GreaterThan"}] String VersionComparison;
+    [Required, Description("Uri of a file which should be copied or downloaded. This parameter supports HTTP, HTTPS, FTP, and FILE values.")] String Uri;
+    [Write, Description("Install command for software package. The following string replacements will be performed: {0} = Installer File, {1} = Log File, {2} = Package Id (as detected in Uninstall entry).")] String InstallCommand;
+    [Write, Description("Valid return codes for the install command. Default is 0, 1641, and 3010.")] Uint32 ReturnCode[];
+    [Write, Description("Uninstall command for software package. The following string replacements will be performed: {0} = Installer File, {1} = Log File, {2} = Package Id (as detected in Uninstall entry).")] String UninstallCommand;
+    [Write, Description("Valid return codes for the uninstall command. Default is 0 and 3010.")] Uint32 UninstallReturnCode[];
+    [Write, Description("Installer is required for uninstall command. Keeps cached files, or downloads installer if cache is missing.")] Boolean UninstallRequiresInstaller;
+    [Write, Description("Specifies a user account that has permission to send the request."), EmbeddedInstance("MSFT_Credential")] String Credential;
+    [Write, Description("Specifies to use the Default Credential to send the request.")] Boolean UseDefaultCredential;
+    [Write, Description("Specifies the proxy to use when sending the request.")] String Proxy;
+    [Write, Description("Specifies a user account that has permission to access the proxy."), EmbeddedInstance("MSFT_Credential")] String ProxyCredential;
+    [Write, Description("Specifies to use the Default Credential to access the proxy.")] Boolean ProxyUseDefaultCredential;
+    [Write, Description("Specifies path to log file.")] String LogPath;
+    [Write, Description("Specifies the checksum value to compare against the downloaded file.")] String Hash;
+    [Write, Description("Specifies the checksum type to verify the downloaded file"), ValueMap{"None","SHA1","SHA256","SHA384","SHA512","MACTripleDES","MD5","RIPEMD160"}, Values{"None","SHA1","SHA256","SHA384","SHA512","MACTripleDES","MD5","RIPEMD160"}] String Algorithm;
+    [Write, Description("Requite valid signing certificate on the installer. Implied TRUE if Subject or Thumbprint are validated.")] Boolean RequireValidSignature;
+    [Write, Description("Subject name of signing certificate used for installer. Wildcards are supported.")] String Subject;
+    [Write, Description("Thumbprint of the signing certificate used for installer. Wildcards are supported.")] String Thumbprint;
+    [Write, Description("Callback scriptblock used to validate server certificate of server when downloading over HTTPS or FTPS.")] String ServerCertificateValidationCallback;
+    [Write, Description("Specifies that we will not instruct DSC to trigger a reboot on exit code 3010.")] Boolean IgnoreReboot;
+    [Write, Description("Specifies the credential to use when running the installer."), EmbeddedInstance("MSFT_Credential")] String RunAsCredential;
+    [Write, Description("Specifies how long the request can be pending before it times out.")] Uint32 TimeoutSeconds;
+};
