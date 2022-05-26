@@ -525,9 +525,13 @@ function Invoke-WebFileDownload {
 
     try {
 
+        Write-Verbose 'Resolving output folder.'
+
+        $OutputFolder = $OutputFolder | Resolve-Path | Convert-Path
+
         if ( -not( Test-Path -Path $OutputFolder -PathType Container ) ) {
 
-            Write-Error ( 'Output folder does not exist: {0}' -f $OutputFolder )  -ErrorAction Stop
+            throw ( 'Output folder does not exist: {0}' -f $OutputFolder )
 
         }
 
@@ -549,7 +553,7 @@ function Invoke-WebFileDownload {
 
             default {
 
-                Write-Error ( 'Protocol {0} not supported.' -f $Uri.Scheme ) -ErrorAction Stop
+                throw ( 'Protocol {0} not supported.' -f $Uri.Scheme )
 
             }
 
@@ -624,6 +628,8 @@ function Invoke-WebFileDownload {
 
         }
 
+        Write-Verbose 'Response received.'
+
         if ( -not $PSBoundParameters.ContainsKey( 'FileName' ) ) {
 
             Write-Verbose 'No file name supplied, attempting to determine filename from URI.'
@@ -638,7 +644,7 @@ function Invoke-WebFileDownload {
 
                 if ( $Uri.Scheme -like 'ftp*' ) {
 
-                    Write-Error 'Invalid file name.' -ErrorAction Stop
+                    throw 'Invalid file name.'
 
                 }
                 
@@ -650,7 +656,7 @@ function Invoke-WebFileDownload {
 
                 if ( -not $FileName ) {
 
-                    Write-Error 'Invalid file name, and no Content-Disposition header from server.' -ErrorAction Stop
+                    throw 'Invalid file name, and no Content-Disposition header from server.'
 
                 }
 
@@ -681,10 +687,6 @@ function Invoke-WebFileDownload {
 
         }
 
-    } catch {
-
-        Write-Error -Exception $_.Exception -Message 'Could not download file.'
-    
     } finally {
 
         if ( $null -ne $Response ) {
