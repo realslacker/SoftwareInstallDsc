@@ -1562,60 +1562,26 @@ function Set-TargetResource {
 
     if ( $Ensure -eq 'Present' -or $UninstallRequiresInstaller ) {
 
-        $Installer = switch -Regex ( $InstallerUri.Scheme ) {
-            
-            '^(ht|f)tps?$' {
-            
-                Invoke-WebFileDownload @PSBoundParameters -OutputFolder $CacheFolder | Convert-Path
-            
-            }
-
-            '^file$' {
-
-                if ( $InstallerUri.IsUnc ) {
-
-                    Invoke-FileCopy @PSBoundParameters -OutputFolder $CacheFolder | Convert-Path
-
-                } else {
-
-                    Get-Item -LiteralPath $InstallerUri.AbsolutePath -ErrorAction Stop | Convert-Path
-
-                }
-
-            }
-
-            default {
-
-                throw ( 'Unsupported URI scheme: {0}' -f $_ )
-
-            }
-
+        if ( $InstallerUri.IsFile -and -not $InstallerUri.IsUnc ) {
+            $Installer = Get-Item -LiteralPath $InstallerUri.AbsolutePath -ErrorAction Stop | Convert-Path
+        } else {
+            $Installer = Invoke-WebFileDownload @PSBoundParameters -OutputFolder $CacheFolder | Convert-Path
         }
 
         if ( -not $Installer ) {
-
             Write-Error 'Installer was not found.' -ErrorAction Stop
-
         }
 
         if ( $Hash ) {
-
             Assert-FileHashValid -Path $Installer @PSBoundParameters
-
         } else {
-
             Write-Warning 'File hash was not verified!'
-
         }
 
         if ( $RequireValidSignature -or $Subject -or $Thumbprint ) {
-
             Assert-FileSignatureValid -Path $Installer @PSBoundParameters
-
         } else {
-
             Write-Warning 'File signature was not verified!'
-            
         }
 
     }
