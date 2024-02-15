@@ -6,28 +6,26 @@ using namespace System.Net.Security
 using namespace System.Security.Cryptography
 using namespace System.Management.Automation
 
-
 $Script:PackageCacheLocation = "$env:ProgramData\Microsoft\Windows\PowerShell\Configuration\BuiltinProvCache\DSC_SoftwareInstallResource"
 
-<#
-.SYNOPSIS
- Generates and MD5 hash for a given string.
-#>
+
 function Get-StringMD5 ( [string]$String ) {
+    <#
+    .SYNOPSIS
+    Generates and MD5 hash for a given string.
+    #>
     
     [MD5CryptoServiceProvider]::new().ComputeHash( [Encoding]::UTF8.GetBytes( $Name ) ).ForEach({ '{0:x2}' -f $_ }) -join ''
 
 }
 
-<#
-.SYNOPSIS
- Create and return the path for a cache folder on the disk.
-
-.DESCRIPTION
- Create and return the path for a cache folder on the disk. Uses the Name property MD5 hash as the folder name.
-#>
 function Get-CacheFolder {
-
+    <#
+    .SYNOPSIS
+    Create and return the path for a cache folder on the disk.
+    .DESCRIPTION
+    Create and return the path for a cache folder on the disk. Uses the Name property MD5 hash as the folder name.
+    #>
     [CmdletBinding()]
     param(
 
@@ -60,15 +58,13 @@ function Get-CacheFolder {
 }
 
 
-<#
-.SYNOPSIS
- Remove a cache folder on the disk.
-
-.DESCRIPTION
- Remove a cache folder on the disk. Uses the Name property MD5 hash as the folder name.
-#>
 function Remove-CacheFolder {
-
+    <#
+    .SYNOPSIS
+    Remove a cache folder on the disk.
+    .DESCRIPTION
+    Remove a cache folder on the disk. Uses the Name property MD5 hash as the folder name.
+    #>
     [CmdletBinding()]
     param(
 
@@ -92,23 +88,18 @@ function Remove-CacheFolder {
 
         Remove-Item -Path $FolderPath -Recurse -Force -ErrorAction Stop
 
-    } else {
-
-        Write-Verbose 'Cache folder does not exist.'
-
     }
 
 }
 
 
-<#
-.SYNOPSIS
- Parse a command line using native command parsing and return a splat compatible with Start-Process.
-
-.DESCRIPTION
- Parse a command line using native command parsing and return a splat compatible with Start-Process.
-#>
 function ConvertFrom-CommandLine {
+    <#
+    .SYNOPSIS
+    Parse a command line using native command parsing and return a splat compatible with Start-Process.
+    .DESCRIPTION
+    Parse a command line using native command parsing and return a splat compatible with Start-Process.
+    #>
     param( [string]$CommandLine )
     function __args { $args }
     $Splat = @{}
@@ -122,31 +113,21 @@ function ConvertFrom-CommandLine {
 }
 
 
-<#
-.SYNOPSIS
- Return uninstall entries matching given parameters.
-
-.DESCRIPTION
- Return uninstall entries matching given parameters.
-
-.PARAMETER Name
- Matches the DisplayName of the uninstall entry.
-
-.PARAMETER Publisher
- Matches the Publisher of the uninstall entry.
-
-.PARAMETER Version
- Matches the DisplayVersion of the uninstall entry.
-
-.PARAMETER VersionComparison
- How to compare the given version with the DisplayVersion.
-
-.PARAMETER LatestVersion
- How many versions to return, newest to oldest.
-
-#>
 function Get-UninstallEntry {
-
+    <#
+    .SYNOPSIS
+    Return uninstall entries matching given parameters.
+    .DESCRIPTION
+    Return uninstall entries matching given parameters.
+    .PARAMETER Name
+    Matches the DisplayName of the uninstall entry.
+    .PARAMETER Publisher
+    Matches the Publisher of the uninstall entry.
+    .PARAMETER Version
+    Matches the DisplayVersion of the uninstall entry.
+    .PARAMETER LatestVersion
+    How many versions to return, newest to oldest.
+    #>
     [CmdletBinding()]
     param(
 
@@ -168,11 +149,6 @@ function Get-UninstallEntry {
         $Version,
 
         [Parameter()]
-        [ValidateSet( 'Any', 'LessThan', 'LessThanOrEqualTo', 'EqualTo', 'GreaterThanOrEqualTo', 'GreaterThan' )]
-        [string]
-        $VersionComparison = 'EqualTo',
-
-        [Parameter()]
         [ValidateRange( 1, [uint32]::MaxValue)]
         [uint32]
         $LatestVersions = 1,
@@ -182,32 +158,17 @@ function Get-UninstallEntry {
 
     )
 
-    Write-Verbose ( 'Searching for products matching ''{0}'' with versions {1} {2}.' -f $Name, $VersionComparison, $Version )
+    Write-Verbose ( 'Searching for products matching ''{0}'' with versions matching {1}' -f $Name, (Get-VersionStringDisplayString -VersionString $Version) )
 
     $RegistryLocations = @(
         'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*'
         'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
     )
-    
+
     [object[]]$MatchingProducts = Get-ItemProperty -Path $RegistryLocations |
         Where-Object { -not ( [string]::IsNullOrEmpty( $_.DisplayName ) -or [string]::IsNullOrEmpty( $_.DisplayVersion ) -or [string]::IsNullOrEmpty( $_.UninstallString ) ) } |
         Where-Object { $_.DisplayName -like $Name -and ( -not $Publisher -or $_.Publisher -like $Publisher ) } |
-        Where-Object {
-
-            if ( [string]::IsNullOrEmpty( $Version ) ) { return $true }
-
-            [version]$PackageVersion = $_.DisplayVersion
-
-            switch ( $VersionComparison ) {
-                'Any'                  { $true }
-                'LessThan'             { $PackageVersion -lt $Version }
-                'LessThanOrEqualTo'    { $PackageVersion -le $Version }
-                'EqualTo'              { $PackageVersion -eq $Version }
-                'GreaterThanOrEqualTo' { $PackageVersion -ge $Version }
-                'GreaterThan'          { $PackageVersion -gt $Version }
-            }
-        
-        } |
+        Where-Object { $_.DisplayVersion | Test-IsVersionApplicable -VersionString $Version } |
         Sort-Object { [version]$_.DisplayVersion } -Descending |
         ForEach-Object {
 
@@ -242,28 +203,21 @@ function Get-UninstallEntry {
 }
 
 
-<#
-.SYNOPSIS
- Asserts that the hash of the file at the given path matches the given hash.
-
-.PARAMETER Path
- The path to the file to check the hash of.
-
-.PARAMETER Hash
- The hash to check against.
-
-.PARAMETER Algorithm
- The algorithm to use to retrieve the file's hash.
-
-.NOTES
- Inspired by a similar function in xPSDesiredStateConfiguration
-
-.LINK
- https://github.com/dsccommunity/xPSDesiredStateConfiguration/blob/9940d6bd5b839773ffc0427047598ef9cb5693f0/source/DSCResources/DSC_xPackageResource/DSC_xPackageResource.psm1#L1507
-
-#>
 function Assert-FileHashValid {
-
+    <#
+    .SYNOPSIS
+    Asserts that the hash of the file at the given path matches the given hash.
+    .PARAMETER Path
+    The path to the file to check the hash of.
+    .PARAMETER Hash
+    The hash to check against.
+    .PARAMETER Algorithm
+    The algorithm to use to retrieve the file's hash.
+    .NOTES
+    Inspired by a similar function in xPSDesiredStateConfiguration
+    .LINK
+    https://github.com/dsccommunity/xPSDesiredStateConfiguration/blob/9940d6bd5b839773ffc0427047598ef9cb5693f0/source/DSCResources/DSC_xPackageResource/DSC_xPackageResource.psm1#L1507
+    #>
     [CmdletBinding()]
     param(
 
@@ -306,28 +260,21 @@ function Assert-FileHashValid {
 }
 
 
-<#
-.SYNOPSIS
- Asserts that the signature of the file at the given path is valid.
-
-.PARAMETER Path
- The path to the file to check the signature of
-
-.PARAMETER Thumbprint
- The certificate thumbprint that should match the file's signer certificate.
-
-.PARAMETER Subject
- The certificate subject that should match the file's signer certificate.
-
-.NOTES
- Inspired by a similar function in xPSDesiredStateConfiguration
-
-.LINK
- https://github.com/dsccommunity/xPSDesiredStateConfiguration/blob/9940d6bd5b839773ffc0427047598ef9cb5693f0/source/DSCResources/DSC_xPackageResource/DSC_xPackageResource.psm1#L1553
-
-#>
 function Assert-FileSignatureValid {
-
+    <#
+    .SYNOPSIS
+    Asserts that the signature of the file at the given path is valid.
+    .PARAMETER Path
+    The path to the file to check the signature of
+    .PARAMETER Thumbprint
+    The certificate thumbprint that should match the file's signer certificate.
+    .PARAMETER Subject
+    The certificate subject that should match the file's signer certificate.
+    .NOTES
+    Inspired by a similar function in xPSDesiredStateConfiguration
+    .LINK
+    https://github.com/dsccommunity/xPSDesiredStateConfiguration/blob/9940d6bd5b839773ffc0427047598ef9cb5693f0/source/DSCResources/DSC_xPackageResource/DSC_xPackageResource.psm1#L1553
+    #>
     [CmdletBinding()]
     param(
 
@@ -407,52 +354,37 @@ function Assert-FileSignatureValid {
 }
 
 
-<#
-.SYNOPSIS
- Download a file from the web.
-
-.PARAMETER Uri
- The URI of the file on the web.
-
-.PARAMETER OutputFolder
- Where the file will be output.
-
-.PARAMETER FileName
- Specify a specific output filename.
-
-.PARAMETER ServerCertificateValidationCallback
- Callback function to validate server certificate is valid.
-
-.PARAMETER Credential
- Credential to authenticate for download. Ignored for HTTP or FTP file transfers.
-
-.PARAMETER UseDefaultCredential
- Use default credential to authenticate for download. Ignored for HTTP or FTP file transfers.
-
-.PARAMETER Proxy
- Use a proxy server to download files.
-
-.PARAMETER ProxyCredential
- Credential to authenticate to the proxy server.
-
-.PARAMETER UseDefaultCredential
- Use default credential to authenticate to the proxy server.
-
-.PARAMETER Force
- Force a download.
-
-.NOTES
- Inspired by similar functions in xPSDesiredStateConfiguration and chocolatey
-
-.LINK
- https://github.com/dsccommunity/xPSDesiredStateConfiguration/blob/9940d6bd5b839773ffc0427047598ef9cb5693f0/source/DSCResources/DSC_xPackageResource/DSC_xPackageResource.psm1#L498
-
-.LINK
- https://github.com/chocolatey/choco/blob/develop/src/chocolatey.resources/helpers/functions/Get-ChocolateyWebFile.ps1
-
-#>
 function Invoke-WebFileDownload {
-
+    <#
+    .SYNOPSIS
+    Download a file from the web.
+    .PARAMETER Uri
+    The URI of the file on the web.
+    .PARAMETER OutputFolder
+    Where the file will be output.
+    .PARAMETER FileName
+    Specify a specific output filename.
+    .PARAMETER ServerCertificateValidationCallback
+    Callback function to validate server certificate is valid.
+    .PARAMETER Credential
+    Credential to authenticate for download. Ignored for HTTP or FTP file transfers.
+    .PARAMETER UseDefaultCredential
+    Use default credential to authenticate for download. Ignored for HTTP or FTP file transfers.
+    .PARAMETER Proxy
+    Use a proxy server to download files.
+    .PARAMETER ProxyCredential
+    Credential to authenticate to the proxy server.
+    .PARAMETER UseDefaultCredential
+    Use default credential to authenticate to the proxy server.
+    .PARAMETER Force
+    Force a download.
+    .NOTES
+    Inspired by similar functions in xPSDesiredStateConfiguration and chocolatey
+    .LINK
+    https://github.com/dsccommunity/xPSDesiredStateConfiguration/blob/9940d6bd5b839773ffc0427047598ef9cb5693f0/source/DSCResources/DSC_xPackageResource/DSC_xPackageResource.psm1#L498
+    .LINK
+    https://github.com/chocolatey/choco/blob/develop/src/chocolatey.resources/helpers/functions/Get-ChocolateyWebFile.ps1
+    #>
     [CmdletBinding( DefaultParameterSetName = 'NoCredential_ProxyNoCredential' )]
     param(
     
@@ -719,31 +651,23 @@ function Invoke-WebFileDownload {
 }
 
 
-<#
-.SYNOPSIS
- Copy a file from a local or network share.
-
-.PARAMETER Uri
- The URI of the file.
-
-.PARAMETER OutputFolder
- Where the file will be output.
-
-.PARAMETER FileName
- Specify a specific output filename.
-
-.PARAMETER Credential
- Credential to authenticate for download. Ignored for HTTP or FTP file transfers.
-
-.PARAMETER UseDefaultCredential
- Use default credential to authenticate for download. Ignored for HTTP or FTP file transfers.
-
-.PARAMETER Force
- Force a download.
-
-#>
 function Invoke-FileCopy {
-
+    <#
+    .SYNOPSIS
+    Copy a file from a local or network share.
+    .PARAMETER Uri
+    The URI of the file.
+    .PARAMETER OutputFolder
+    Where the file will be output.
+    .PARAMETER FileName
+    Specify a specific output filename.
+    .PARAMETER Credential
+    Credential to authenticate for download. Ignored for HTTP or FTP file transfers.
+    .PARAMETER UseDefaultCredential
+    Use default credential to authenticate for download. Ignored for HTTP or FTP file transfers.
+    .PARAMETER Force
+    Force a download.
+    #>
     [CmdletBinding()]
     param(
     
@@ -834,12 +758,11 @@ function Invoke-FileCopy {
 }
 
 
-<#
-.SYNOPSIS
- Resolve exiting and missing file paths.
-#>
 function Resolve-PathEx {
-
+    <#
+    .SYNOPSIS
+    Resolve exiting and missing file paths.
+    #>
     [CmdletBinding( DefaultParameterSetName = 'Path' )]
     param(
 
@@ -897,12 +820,11 @@ function Resolve-PathEx {
 }
 
 
-<#
-.SYNOPSIS
- Convert paths for existing and non-existant files.
-#>
 function Convert-PathEx {
-
+    <#
+    .SYNOPSIS
+    Convert paths for existing and non-existant files.
+    #>
     [CmdletBinding( DefaultParameterSetName = 'Path' )]
     param(
 
@@ -988,12 +910,115 @@ function Convert-PathEx {
 }
 
 
-<#
-.SYNOPSIS
- Validate that log file is writable.
-#>
-function Test-LogFileIsWritable {
+function Get-VersionStringDisplayString {
+    <#
+    .SYNOPSIS
+    Get a friendly display version string
+    .DESCRIPTION
+    Get a friendly display version string
+    .EXAMPLE
+    Convert-VersionStringToFilter -VersionString '[1.0,]'
+    #>
+    [CmdletBinding()]
+    [OutputType( [string] )]
+    param(
+        [Parameter( Position=1 )]
+        [string]
+        $VersionString
+    )
 
+    switch -Regex ( $VersionString ) {
+        '^\[(?<Version>\d+\.\d+[^,]*),[\)\]]$'                            { '{0} ≤ ?.?' -f $Matches.Version                               } # Example: [1.0,] or [1.0,)
+        '^\((?<Version>\d+\.\d+[^,]*),[\)\]]$'                            { '{0} < ?.?' -f $Matches.Version                               } # Example: (1.0,) or (1.0,]
+        '^\[(?<Version>\d+\.\d+[^,]*)\]$'                                 { '?.? = {0}' -f $Matches.Version                               } # Example: [1.0]
+        '^(?<Version>\d+\.\d+[^,]*)$'                                     { '?.? = {0}' -f $Matches.Version                               } # Example: 1.0
+        '^[\(\[],(?<Version>\d+\.\d+[^,]*)\)$'                            { '?.? < {0}' -f $Matches.Version                               } # Example: (,1.0) or [,1.0)
+        '^[\(\[],(?<Version>\d+\.\d+[^,]*)\]$'                            { '?.? ≤ {0}' -f $Matches.Version                               } # Example: (,1.0] or [,1.0]
+        '^\[(?<MinVersion>\d+\.\d+[^,]*),(?<MaxVersion>\d+\.\d+[^,]*)\]$' { '{0} ≤ ?.? ≤ {1}' -f $Matches.MinVersion, $Matches.MaxVersion } # Example: [1.0,2.0]
+        '^(?<MinVersion>\d+\.\d+[^,]*),(?<MaxVersion>\d+\.\d+[^,]*)$'     { '{0} ≤ ?.? ≤ {1}' -f $Matches.MinVersion, $Matches.MaxVersion } # Example: 1.0,2.0
+        '^\((?<MinVersion>\d+\.\d+[^,]*),(?<MaxVersion>\d+\.\d+[^,]*)\)$' { '{0} < ?.? < {1}' -f $Matches.MinVersion, $Matches.MaxVersion } # Example: (1.0,2.0)
+        '^\[(?<MinVersion>\d+\.\d+[^,]*),(?<MaxVersion>\d+\.\d+[^,]*)\)$' { '{0} ≤ ?.? < {1}' -f $Matches.MinVersion, $Matches.MaxVersion } # Example: [1.0,2.0)
+        '^\((?<MinVersion>\d+\.\d+[^,]*),(?<MaxVersion>\d+\.\d+[^,]*)\]$' { '{0} < ?.? ≤ {1}' -f $Matches.MinVersion, $Matches.MaxVersion } # Example: (1.0,2.0]
+        default { 'ANY' }
+    }
+
+}
+
+
+function Convert-VersionStringToFilter {
+    <#
+    .SYNOPSIS
+    Convert a version string to a filter
+    .DESCRIPTION
+    Convert a version string to a filter
+    .EXAMPLE
+    Convert-VersionStringToFilter -VersionString '[1.0,]'
+    #>
+    [CmdletBinding()]
+    [OutputType( [scriptblock] )]
+    param(
+        [Parameter( Mandatory=$true, Position=1 )]
+        [string]
+        $VersionString
+    )
+
+    $FilterDefinition = switch -Regex ( $VersionString ) {
+        '^\[(?<Version>\d+\.\d+[^,]*),[\)\]]$'                            { '[version]$_ -ge ''{0}''' -f $Matches.Version                                                      } # Example: [1.0,] or [1.0,)
+        '^\((?<Version>\d+\.\d+[^,]*),[\)\]]$'                            { '[version]$_ -gt ''{0}''' -f $Matches.Version                                                      } # Example: (1.0,) or (1.0,]
+        '^\[(?<Version>\d+\.\d+[^,]*)\]$'                                 { '[version]$_ -eq ''{0}''' -f $Matches.Version                                                      } # Example: [1.0]
+        '^(?<Version>\d+\.\d+[^,]*)$'                                     { '[version]$_ -eq ''{0}''' -f $Matches.Version                                                      } # Example: 1.0
+        '^[\(\[],(?<Version>\d+\.\d+[^,]*)\)$'                            { '[version]$_ -lt ''{0}''' -f $Matches.Version                                                      } # Example: (,1.0) or [,1.0)
+        '^[\(\[],(?<Version>\d+\.\d+[^,]*)\]$'                            { '[version]$_ -le ''{0}''' -f $Matches.Version                                                      } # Example: (,1.0] or [,1.0]
+        '^\[(?<MinVersion>\d+\.\d+[^,]*),(?<MaxVersion>\d+\.\d+[^,]*)\]$' { '[version]''{0}'' -le $_ -and [version]$_ -le ''{1}''' -f $Matches.MinVersion, $Matches.MaxVersion } # Example: [1.0,2.0]
+        '^(?<MinVersion>\d+\.\d+[^,]*),(?<MaxVersion>\d+\.\d+[^,]*)$'     { '[version]''{0}'' -le $_ -and [version]$_ -le ''{1}''' -f $Matches.MinVersion, $Matches.MaxVersion } # Example: 1.0,2.0
+        '^\((?<MinVersion>\d+\.\d+[^,]*),(?<MaxVersion>\d+\.\d+[^,]*)\)$' { '[version]''{0}'' -lt $_ -and [version]$_ -lt ''{1}''' -f $Matches.MinVersion, $Matches.MaxVersion } # Example: (1.0,2.0)
+        '^\[(?<MinVersion>\d+\.\d+[^,]*),(?<MaxVersion>\d+\.\d+[^,]*)\)$' { '[version]''{0}'' -le $_ -and [version]$_ -lt ''{1}''' -f $Matches.MinVersion, $Matches.MaxVersion } # Example: [1.0,2.0)
+        '^\((?<MinVersion>\d+\.\d+[^,]*),(?<MaxVersion>\d+\.\d+[^,]*)\]$' { '[version]''{0}'' -lt $_ -and [version]$_ -le ''{1}''' -f $Matches.MinVersion, $Matches.MaxVersion } # Example: (1.0,2.0]
+        default { throw 'Unrecognized Version Pattern - see https://learn.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges' }
+    }
+
+    return [scriptblock]::Create($FilterDefinition)
+
+}
+
+
+function Test-IsVersionApplicable {
+    <#
+    .SYNOPSIS
+    Check if a version is applicable given a particular version string
+    .DESCRIPTION
+    Check if a version is applicable given a particular version string
+    .EXAMPLE
+    Test-IsVersionApplicable -VersionString '[1.0,]' -ComparisonVersion '1.5.1'
+    #>
+    [CmdletBinding( PositionalBinding=$false )]
+    [OutputType( [scriptblock] )]
+    param(
+        
+        [string]
+        $VersionString,
+
+        [Parameter( Mandatory=$true, ValueFromPipeline=$true )]
+        [string]
+        $ComparisonVersion
+    )
+
+    process {
+
+        if ( [string]::IsNullOrEmpty($VersionString) ) { return $true }
+
+        return ( $ComparisonVersion | ForEach-Object (Convert-VersionStringToFilter -VersionString $VersionString) | Select-Object -First 1 )
+
+    }
+
+}
+
+
+function Test-LogFileIsWritable {
+    <#
+    .SYNOPSIS
+    Validate that log file is writable.
+    #>
     [CmdletBinding()]
     param(
     
@@ -1051,10 +1076,10 @@ function Get-TargetResource {
     [CmdletBinding( SupportsShouldProcess = $true )]
     param(
 
-        [Parameter()]
+        [Parameter( Mandatory = $true )]
         [ValidateSet( 'Present', 'Absent' )]
         [System.String]
-        $Ensure = 'Present',
+        $Ensure,
 
         [Parameter( Mandatory = $true )]
         [ValidateSet( 'MSI', 'EXE' )]
@@ -1069,6 +1094,11 @@ function Get-TargetResource {
 
         [Parameter()]
         [ValidateNotNullOrEmpty()]
+        [System.String]
+        $ProductId,
+
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
         [System.String]
         $Publisher,
@@ -1079,11 +1109,6 @@ function Get-TargetResource {
         $Version,
 
         [Parameter()]
-        [ValidateSet( 'Any', 'LessThan', 'LessThanOrEqualTo', 'EqualTo', 'GreaterThanOrEqualTo', 'GreaterThan' )]
-        [System.String]
-        $VersionComparison = 'EqualTo',
-
-        [Parameter( Mandatory = $true )]
         [ValidateNotNullOrEmpty()]
         [System.String]
         $Uri,
@@ -1203,7 +1228,6 @@ function Get-TargetResource {
         $Package.ProductId         = $UninstallEntry.ProductId.ToString('B')
         $Package.Publisher         = $UninstallEntry.Publisher
         $Package.Version           = $UninstallEntry.Version.ToString()
-        $Package.VersionComparison = 'EqualTo'
     }
 
     # if no install string provided, we're going to assume a bare command for .EXE and default .MSI command
@@ -1232,7 +1256,7 @@ function Get-TargetResource {
 
         if ( $Type -eq 'MSI' ) { 
 
-            $Package.UninstallCommand = 'msiexec.exe /X{2} /QN /norestart'
+            $Package.UninstallCommand = 'msiexec.exe /X "{2}" /QN /norestart'
 
             if ( $LogPath ) {
 
@@ -1266,10 +1290,10 @@ function Test-TargetResource {
     [CmdletBinding( SupportsShouldProcess = $true )]
     param(
 
-        [Parameter()]
+        [Parameter( Mandatory = $true )]
         [ValidateSet( 'Present', 'Absent' )]
         [System.String]
-        $Ensure = 'Present',
+        $Ensure,
 
         [Parameter( Mandatory = $true )]
         [ValidateSet( 'MSI', 'EXE' )]
@@ -1284,6 +1308,11 @@ function Test-TargetResource {
 
         [Parameter()]
         [ValidateNotNullOrEmpty()]
+        [System.String]
+        $ProductId,
+
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
         [System.String]
         $Publisher,
@@ -1294,11 +1323,6 @@ function Test-TargetResource {
         $Version,
 
         [Parameter()]
-        [ValidateSet( 'Any', 'LessThan', 'LessThanOrEqualTo', 'EqualTo', 'GreaterThanOrEqualTo', 'GreaterThan' )]
-        [System.String]
-        $VersionComparison = 'EqualTo',
-
-        [Parameter( Mandatory = $true )]
         [ValidateNotNullOrEmpty()]
         [System.String]
         $Uri,
@@ -1411,10 +1435,10 @@ function Set-TargetResource {
     [CmdletBinding( SupportsShouldProcess = $true )]
     param(
 
-        [Parameter()]
+        [Parameter( Mandatory = $true )]
         [ValidateSet( 'Present', 'Absent' )]
         [System.String]
-        $Ensure = 'Present',
+        $Ensure,
 
         [Parameter( Mandatory = $true )]
         [ValidateSet( 'MSI', 'EXE' )]
@@ -1429,6 +1453,11 @@ function Set-TargetResource {
 
         [Parameter()]
         [ValidateNotNullOrEmpty()]
+        [System.String]
+        $ProductId,
+
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
         [System.String]
         $Publisher,
@@ -1439,11 +1468,6 @@ function Set-TargetResource {
         $Version,
 
         [Parameter()]
-        [ValidateSet( 'Any', 'LessThan', 'LessThanOrEqualTo', 'EqualTo', 'GreaterThanOrEqualTo', 'GreaterThan' )]
-        [System.String]
-        $VersionComparison = 'EqualTo',
-
-        [Parameter( Mandatory = $true )]
         [ValidateNotNullOrEmpty()]
         [System.String]
         $Uri,
@@ -1558,14 +1582,18 @@ function Set-TargetResource {
     $InstallerUri = $Uri -as [uri]
     $Installer = $null
 
-    $CacheFolder = Get-CacheFolder $Name
-
-    if ( $Ensure -eq 'Present' -or $UninstallRequiresInstaller ) {
-
+    # cache the file if the InstallerURI is specifed
+    if ( $InstallerUri -and ( $Ensure -eq 'Present' -or $UninstallRequiresInstaller ) ) {
+            
         if ( $InstallerUri.IsFile -and -not $InstallerUri.IsUnc ) {
+            
             $Installer = Get-Item -LiteralPath $InstallerUri.AbsolutePath -ErrorAction Stop | Convert-Path
+        
         } else {
+        
+            $CacheFolder = Get-CacheFolder $Name
             $Installer = Invoke-WebFileDownload @PSBoundParameters -OutputFolder $CacheFolder | Convert-Path
+        
         }
 
         if ( -not $Installer ) {
@@ -1584,29 +1612,6 @@ function Set-TargetResource {
             Write-Warning 'File signature was not verified!'
         }
 
-    }
-
-    # not install string provided, we're going to assume a bare command for .EXE and default .MSI command
-    if ( [string]::IsNullOrEmpty( $InstallCommand ) ) {
-
-        $Extension = [path]::GetExtension( $Installer )
-
-        if ( $Extension -eq '.msi' ) {
-
-            $InstallCommand = '"%windir%\System32\msiexec.exe" /I "{0}" /QN'
-
-            if ( $LogPath -and ( Test-LogFileIsWritable @PSBoundParameters ) ) {
-
-                $InstallCommand += ' /log "{1}"'
-
-            }
-
-        } else {
-
-            $InstallCommand = '"{0}"'
-
-        }
-    
     }
 
     # are we installing or uninstalling?
