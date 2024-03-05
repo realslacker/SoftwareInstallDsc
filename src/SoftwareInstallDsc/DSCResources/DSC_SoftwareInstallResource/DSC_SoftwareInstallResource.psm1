@@ -1225,9 +1225,12 @@ function Get-TargetResource {
     if ( $UninstallEntry ) {
         $Package.Ensure            = 'Present'
         $Package.Name              = $UninstallEntry.Name
-        $Package.ProductId         = $UninstallEntry.ProductId.ToString('B')
         $Package.Publisher         = $UninstallEntry.Publisher
         $Package.Version           = $UninstallEntry.Version.ToString()
+        # Product ID is not populated with EXE installers (generally) so only set it if it is a guid
+        if ( $UninstallEntry.ProductId -is [guid] ) {
+            $Package.ProductId         = $UninstallEntry.ProductId.ToString('B')
+        }
     }
 
     # if no install string provided, we're going to assume a bare command for .EXE and default .MSI command
